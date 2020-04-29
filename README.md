@@ -1,0 +1,2 @@
+# edc
+Efficient discrete computations
