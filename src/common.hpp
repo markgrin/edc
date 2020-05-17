@@ -31,5 +31,20 @@ mpz_class legendre(mpz_class a, mpz_class p);
  */
 mpz_class rand_in_interval(mpz_class from, mpz_class to);
 
+/**
+ * @brief Найти следующее простое число после a (c++ обертка)
+ * 
+ * @param a - от какого числа искать ближайшее простое число
+ * @param res - куда поместить результат
+ */
+void nextprime (mpz_class& a, mpz_class& res);
+
+/**
+ * @brief Абсолютное значение a
+ * 
+ * @param a - аргумент, абсолютное значение которого будет вычислено и сохранено в нем же
+ */
+void abs (mpz_class& a);
+
 
 #endif // HPP_AB06F552D8C44A64962836BB3165C20E
