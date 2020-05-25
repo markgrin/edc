@@ -1,6 +1,7 @@
 #include "sieve.hpp"
 #include "common.hpp"
 #include "ressol.hpp"
+#include "gauss.hpp"
 
 #include <vector>
 #include <random>
@@ -51,9 +52,13 @@ void map_fx (std::vector<mpz_class>& T, const mpz_class& m, const mpz_class& h) 
  * @return std::vector<mpz_class>& 
  */
 std::vector<mpz_class> init_factor_base (const mpz_class& B, const mpz_class& m) {
-    std::vector<mpz_class> factor_base = {2};
+    std::vector<mpz_class> factor_base = {};
+    if (m % 2 == 1) {
+        factor_base.push_back(2);
+    }
     for (mpz_class i = 3; i <= B; i = nextprime(i)) {
         if (legendre(m, i) == 1) {
+            std::cout << "FACTOR_BASE:" << i << "\n";
             factor_base.push_back(i);
         }
     }
@@ -62,12 +67,11 @@ std::vector<mpz_class> init_factor_base (const mpz_class& B, const mpz_class& m)
 
 void apply_solution(std::vector<mpz_class>& sieve, mpz_class x, mpz_class p) {
     for (mpz_class kp = x; kp < sieve.size(); kp = kp + p) {
-        // Для всех k : T[x + k * p] = T[x + k * p] + ln(p), вместо ln пока sqrt
         sieve[kp.get_ui()] /= p;
     }
 }
 
-mpz_class do_sieve(const std::vector<mpz_class>& factor_base, std::vector<mpz_class>& sieve, mpz_class m, mpz_class h) {
+void do_sieve(const std::vector<mpz_class>& factor_base, std::vector<mpz_class>& sieve, mpz_class m, mpz_class h) {
     for (std::size_t i = 0; i < factor_base.size(); i++) {
         auto p = factor_base[i];
         // f(x) = (h + x)^2 - m
@@ -76,6 +80,7 @@ mpz_class do_sieve(const std::vector<mpz_class>& factor_base, std::vector<mpz_cl
         mpz_class x2 = p - x1;
         x1 = (x1 - (h % p) + p) % p;
         x2 = (x2 - (h % p) + p) % p;
+        std::cout << "RSESSOL:(" << p << "," << m << ") = " << x1 << " " << x2 << std::endl;
         apply_solution(sieve, x1, p);
         if (x1 != x2) {
             apply_solution(sieve, x2, p);
@@ -102,6 +107,9 @@ mpz_class quadratic_sieve_algorithm (const mpz_class& m) {
     const mpz_class B = 29; // Максимальное число в факторной базе
     const std::size_t S = 100; // Размер решета
 
+    if (m % 2 == 0) {
+        return 2;
+    }
     //1) Инициализируем Факторную базу
     auto factor_base = init_factor_base(B, m);
 
@@ -116,9 +124,12 @@ mpz_class quadratic_sieve_algorithm (const mpz_class& m) {
     do_sieve(factor_base, sieve, m, h);
 
     //5) Из просеянного решета используем те значения, которые равны 1
+    mpz_class left = 1;
     std::vector<mpz_class> left_factors;
     for (std::size_t i = 0; i < sieve.size(); i++) {
         if ( sieve[i] == 1) {
+            std::cout << "i:" << i <<"\n";
+            left *= (i + h);
             left_factors.push_back(f(i, h, m));
         }
     }
@@ -130,5 +141,15 @@ mpz_class quadratic_sieve_algorithm (const mpz_class& m) {
         }
         left_exponents_matrix.insert(left_exponents_matrix.end(), line.begin(), line.end());
     }
-    return 0;
+    std::cout << "LEFT:" << left << "\n";
+    //gauss(left_exponents_matrix, left_factors.size(), factor_base.size());
+    auto right = gauss(left_exponents_matrix, factor_base.size(), left_factors.size(), left_factors);
+    right = sqrt(right);
+    std::cout << "RIGHT:" << right << "\n";
+    auto res1 = gcd(right + left, m);
+    auto res2 = gcd(abs(left - right), m);
+    if (res1 > res2 && res1 != m) {
+        return res1;
+    }
+    return res2;
 }

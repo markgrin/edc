@@ -34,7 +34,15 @@ int main (int argv, char ** argc) {
             return 0;
         }
 
-        quadratic_sieve_algorithm(input_number);
+        auto result = quadratic_sieve_algorithm(input_number);
+        std::cout << "RESULT:" << result << "\n";
+        if (input_number % result != 0) {
+            std::cout << "INCORRECT\n";
+            return 1;
+        } else {
+            std::cout << "CORRECT\n";
+            return 0;
+        }
 
     } catch (...) {
         std::cout << "Error!\n";
