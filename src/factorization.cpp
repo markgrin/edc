@@ -1,11 +1,8 @@
 #include "factorization.hpp"
 
-using namespace std;
-
-
-vector<mpz_class> factorization(const mpz_class& f, vector<mpz_class>& v)
+std::vector<mpz_class> factorization(const mpz_class& f, std::vector<mpz_class>& v)
 {
-    vector<mpz_class> result = {};
+    std::vector<mpz_class> result = {};
     mpz_class current;
     mpz_class nf = f;
 

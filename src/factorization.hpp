@@ -1,9 +1,8 @@
 #pragma once
 
-#include <iostream>
 #include <gmpxx.h>
+
+#include <iostream>
 #include <vector>
 
-using namespace std;
-
-vector<mpz_class> factorization(const mpz_class& f, vector<mpz_class>& v);
+std::vector<mpz_class> factorization(const mpz_class& f, std::vector<mpz_class>& v);

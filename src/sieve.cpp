@@ -5,13 +5,15 @@
 #include <vector>
 #include <random>
 
+namespace {
+
 /**
  * @brief Заполнение вектора значениями [-1*(sqrt(m) - 1), sqrt(m) - 1]
  * 
  * @param X - пустой вектор
  * @param m - факторизуемое число
  */
-static void filling_x (std::vector<mpz_class>& X, const mpz_class& m) {
+void filling_x (std::vector<mpz_class>& X, const mpz_class& m) {
 
     mpz_class border = sqrt(m) - 1; //  Т.к. gmp не предоставляет функционал
                                     //  для возведения в дробную степень, возьмем 
@@ -31,7 +33,7 @@ static void filling_x (std::vector<mpz_class>& X, const mpz_class& m) {
  * @param h - константа sqrt(m) с округлением в меньшую сторону
  * @param m - факторизуемое число
  */
-static void f(mpz_class& x, const mpz_class& h, const mpz_class& m) {
+void f(mpz_class& x, const mpz_class& h, const mpz_class& m) {
     //f(x) = (x + h)^2 - m
     x += h;
     x *= x;
@@ -44,14 +46,14 @@ static void f(mpz_class& x, const mpz_class& h, const mpz_class& m) {
  * @param X - вектор значений для f(x)
  * @param m - факторизуемое число
  */
-static void map_fx (std::vector<mpz_class>& X, const mpz_class& m) {
+void map_fx (std::vector<mpz_class>& X, const mpz_class& m) {
     const mpz_class h = sqrt(m);  //Вычисляем заранее константу h
     for (mpz_class& i : X) {    //Вычиляем для каждого значения f(x)
         f(i, h, m);
     }
 }
 
-static void init_factor_base (std::vector<mpz_class>& B, const mpz_class& m) {
+void init_factor_base (std::vector<mpz_class>& B, const mpz_class& m) {
     mpz_class border = sqrt(m);     //Возьмем верхнюю оценку факторной базы равной sqrt(m)
     B.insert(begin(B), {-1, 2});    //Заполним базу начальными значениями
     mpz_class nxtprime;
@@ -72,7 +74,7 @@ static void init_factor_base (std::vector<mpz_class>& B, const mpz_class& m) {
  * @param p - элемент факторной базы
  * @param border - верхняя/нижняя граница множества X
  */
-static void distribution_xi(std::vector<mpz_class> T, const mpz_class& x, const mpz_class& p, const mpz_class& border) {
+void distribution_xi(std::vector<mpz_class> T, const mpz_class& x, const mpz_class& p, const mpz_class& border) {
     mpz_class k = 0;
     mpz_class nxt_index = x;
     while (nxt_index <= border && nxt_index < T.size()) {
@@ -97,7 +99,7 @@ static void distribution_xi(std::vector<mpz_class> T, const mpz_class& x, const 
  * @param B - факторная база
  * @param m - факторизируемое число
  */
-static void filling_t(
+void filling_t(
     std::vector<mpz_class> T, 
     const std::vector<mpz_class>& fX, 
     const std::vector<mpz_class>& B, 
@@ -121,7 +123,7 @@ static void filling_t(
  * @param B - факторная база
  * @return нетривиальный делитель m, -1 в случае неудачи
  */
-static mpz_class check_t(
+mpz_class check_t(
     const std::vector<mpz_class> T, 
     const std::vector<mpz_class>& B) {
 
@@ -139,6 +141,7 @@ static mpz_class check_t(
         }
         return -1;
     }
+}
 
 mpz_class quadratic_sieve_algorithm (const mpz_class& m) {
     // Алгоритм:

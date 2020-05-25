@@ -13,7 +13,7 @@
  *
  * @return x такое, что x^2 = a (mod p), -1 в случае ошибки
  */
-mpz_class ressol (mpz_class p, mpz_class q, mpz_class a);
+mpz_class ressol (mpz_class p, mpz_class a);
 
 
 #endif // HPP_D05352118F9245B992AAB52F7E7483B2
