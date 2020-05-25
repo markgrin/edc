@@ -33,8 +33,10 @@ mpz_class rand_in_interval(mpz_class from, mpz_class to) {
     return from + result;
 }
 
-void nextprime (mpz_class& a, mpz_class& res) {
-    mpz_nextprime(res.get_mpz_t(), a.get_mpz_t());
+mpz_class nextprime (mpz_class& a) {
+    mpz_class result;
+    mpz_nextprime(result.get_mpz_t(), a.get_mpz_t());
+    return result;
 }
 
 void abs (mpz_class& a) {

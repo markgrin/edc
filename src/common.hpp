@@ -35,9 +35,8 @@ mpz_class rand_in_interval(mpz_class from, mpz_class to);
  * @brief Найти следующее простое число после a (c++ обертка)
  * 
  * @param a - от какого числа искать ближайшее простое число
- * @param res - куда поместить результат
  */
-void nextprime (mpz_class& a, mpz_class& res);
+mpz_class nextprime (mpz_class& a);
 
 /**
  * @brief Абсолютное значение a

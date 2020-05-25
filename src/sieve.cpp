@@ -4,173 +4,131 @@
 
 #include <vector>
 #include <random>
+#include <iostream>
 
 namespace {
 
 /**
- * @brief Заполнение вектора значениями [-1*(sqrt(m) - 1), sqrt(m) - 1]
- * 
- * @param X - пустой вектор
- * @param m - факторизуемое число
- */
-void filling_x (std::vector<mpz_class>& X, const mpz_class& m) {
-
-    mpz_class border = sqrt(m) - 1; //  Т.к. gmp не предоставляет функционал
-                                    //  для возведения в дробную степень, возьмем 
-                                    //  в качестве верхней/нижней границы максимум
-                                    //  (его мы можем вычислить средствами gmp)
-
-    X.resize(border.get_ui()*2 + 1);
-    for (mpz_class& i : X) {        // Заполняем вектор значениями [-border, border]
-        i = border++;
-    }
-}
-
-/**
- * @brief Функция для генерации квадратичных вычетов
+ * @brief Функция f(x) = (x + h)^2 - m
  * 
  * @param x - аргумент функции
- * @param h - константа sqrt(m) с округлением в меньшую сторону
+ * @param h - константа - рекомендуется sqrt(m) с округлением в меньшую сторону
  * @param m - факторизуемое число
  */
-void f(mpz_class& x, const mpz_class& h, const mpz_class& m) {
+mpz_class f(const mpz_class& x, const mpz_class& h, const mpz_class& m) {
     //f(x) = (x + h)^2 - m
-    x += h;
-    x *= x;
-    x -= m;
+    mpz_class result = x + h;
+    return result * result - m;
+}
+
+mpz_class up_sqrt(const mpz_class& x) {
+    mpz_class result = sqrt(x);
+    if (result * result == x) {
+        return result;
+    }
+    return result + 1;
 }
 
 /**
- * @brief Применение к вектору X функции f(x)
+ * @brief Применение к вектору X функции f(x_i)
  * 
- * @param X - вектор значений для f(x)
+ * @param T - вектор значений для f(x_i)
  * @param m - факторизуемое число
  */
-void map_fx (std::vector<mpz_class>& X, const mpz_class& m) {
-    const mpz_class h = sqrt(m);  //Вычисляем заранее константу h
-    for (mpz_class& i : X) {    //Вычиляем для каждого значения f(x)
-        f(i, h, m);
-    }
-}
-
-void init_factor_base (std::vector<mpz_class>& B, const mpz_class& m) {
-    mpz_class border = sqrt(m);     //Возьмем верхнюю оценку факторной базы равной sqrt(m)
-    B.insert(begin(B), {-1, 2});    //Заполним базу начальными значениями
-    mpz_class nxtprime;
-    nextprime(nxtprime, B.back());  
-    while (nxtprime <= border) {    //Перебираем все простые числа до границы
-        if (legendre(m, nxtprime) == 1) {   //Если Cимвол Лежандра == 1, то значение подходит
-            B.push_back(nxtprime);
-        }
-        nextprime(nxtprime, nxtprime);  //Берем следующее простое число
+void map_fx (std::vector<mpz_class>& T, const mpz_class& m, const mpz_class& h) {
+    mpz_class i = 0;
+    for (mpz_class& x : T) {    //Вычиляем для каждого значения f(x)
+        x = f(i, h, m);
+        i += 1;
     }
 }
 
 /**
- * @brief Увеличивает все элементы с подходящими индексами  на величину ln(p)
+ * @brief Построение факторной базы - массива простых числел x : legendre(x, p) == 1
  * 
- * @param T - ветор с элементами для увеличения на ln(p)
- * @param x - полученный корень
- * @param p - элемент факторной базы
- * @param border - верхняя/нижняя граница множества X
+ * @param B - Максимальное значения в фактор базе
+ * @param m - факторизуемое число
+ * @return std::vector<mpz_class>& 
  */
-void distribution_xi(std::vector<mpz_class> T, const mpz_class& x, const mpz_class& p, const mpz_class& border) {
-    mpz_class k = 0;
-    mpz_class nxt_index = x;
-    while (nxt_index <= border && nxt_index < T.size()) {
-        //T[nxt_index.get_ui()] += ln(p);   //Нет ln() в gmp
-        ++k;
-        nxt_index = x + k * p;
+std::vector<mpz_class> init_factor_base (const mpz_class& B, const mpz_class& m) {
+    std::vector<mpz_class> factor_base = {2};
+    for (mpz_class i = 3; i <= B; i = nextprime(i)) {
+        if (legendre(m, i) == 1) {
+            factor_base.push_back(i);
+        }
     }
-    k = -1;
-    nxt_index = x - p;
-    while (nxt_index >= -border && nxt_index >= 0) {
-        //T[nxt_index.get_ui()] += ln(p);   //Нет ln() в gmp
-        --k;
-        nxt_index = x + k * p;
+    return factor_base;
+}
+
+void apply_solution(std::vector<mpz_class>& sieve, mpz_class x, mpz_class p) {
+    for (mpz_class kp = x; kp < sieve.size(); kp = kp + p) {
+        // Для всех k : T[x + k * p] = T[x + k * p] + ln(p), вместо ln пока sqrt
+        sieve[kp.get_ui()] /= p;
     }
 }
 
-/**
- * @brief Заполняет вектор T значениями по вычисленным индексам
- * 
- * @param T - пустой проициниализированный вектор
- * @param fX - вектор значений f(X)
- * @param B - факторная база
- * @param m - факторизируемое число
- */
-void filling_t(
-    std::vector<mpz_class> T, 
-    const std::vector<mpz_class>& fX, 
-    const std::vector<mpz_class>& B, 
-    const mpz_class& m) {
-
-    mpz_class border = sqrt(m) - 1; //Снова найдем граници X
-    for (const mpz_class& x : fX) {     //Для каждого fxi
-        for (const mpz_class& p : B) {  //Для каждого pi
-            //auto [x1, x2] = ressol(x, 0, p);  //H^2 == 0 mod p  //Убрать с готовностью ressol
-            //distribution_xi(x1, p, border);
-            //distribution_xi(x2, p, border);
+mpz_class do_sieve(const std::vector<mpz_class>& factor_base, std::vector<mpz_class>& sieve, mpz_class m, mpz_class h) {
+    for (std::size_t i = 0; i < factor_base.size(); i++) {
+        auto p = factor_base[i];
+        // f(x) = (h + x)^2 - m
+        // f(x) = 0 => x = sqrt(m) - h mod p
+        mpz_class x1 = ressol(p, m);
+        mpz_class x2 = p - x1;
+        x1 = (x1 - (h % p) + p) % p;
+        x2 = (x2 - (h % p) + p) % p;
+        apply_solution(sieve, x1, p);
+        if (x1 != x2) {
+            apply_solution(sieve, x2, p);
         }
     }
 }
 
-/**
- * @brief Поиск подходящих значений (abs(T[i] - ln(X[i])) <= criterion 
- *        и попытка разложить их на элементы факторной базы
- * 
- * @param T - вектор c результатами просеивания
- * @param B - факторная база
- * @return нетривиальный делитель m, -1 в случае неудачи
- */
-mpz_class check_t(
-    const std::vector<mpz_class> T, 
-    const std::vector<mpz_class>& B) {
-
-        const mpz_class criterion = 0; // Нужно выбрать допустимое отклонение от ln(f(x)) для опробования
-        for (size_t i = 0; i < T.size(); ++i) {
-            /*if ( abs(T[i] - ln(X[i])) <= criterion) { //Смотрим разницу и если она нас устраивает
-                vector<y> res = Функция_разложения_на_множители(T[i], B); //Раскладываем на множители и сверяемся с факторной базой
-                if (res.size()) {// Если функция вернула значения y, 
-                                    // то значит разложение T[i] входит в
-                                    // факторную базу (договоренность о возвращаемом значении)
-                    return T[i];
-                }
-            }
-            */
+std::vector<mpz_class> get_exponents(mpz_class number, const std::vector<mpz_class>& factors) {
+    std::vector<mpz_class> result;
+    for (const auto& factor : factors) {
+        std::size_t i = 0;
+        while (number % factor == 0) {
+            number /= factor;
+            i += 1;
         }
-        return -1;
+        result.push_back(i % 2);
     }
+    return result;
+}
+
 }
 
 mpz_class quadratic_sieve_algorithm (const mpz_class& m) {
-    // Алгоритм:
-    // 1) Инициализируем множество X
-    // 2) Строим вектор f(X)
-    // 3) Инициализируем факторную базу
-    // 4) Инициализируем пустой вектор T
-    // 5) Заполняем вектор Т
-    // 6) Ищем Т* и раскладываем каждый элемент Т* на множители, сверяя с факторной базой
+    const mpz_class B = 29; // Максимальное число в факторной базе
+    const std::size_t S = 100; // Размер решета
 
-    //1) Инициализируем множество X
-    std::vector<mpz_class> X;
-    filling_x(X, m);
+    //1) Инициализируем Факторную базу
+    auto factor_base = init_factor_base(B, m);
 
-    //2) Строим вектор f(X)
-    map_fx(X, m);
+    //2) Инициализируем массив решето
+    std::vector<mpz_class> sieve(S);
 
-    //3) Инициализируем факторную базу
-    std::vector<mpz_class> B;
-    init_factor_base(B, m);
+    //3) Заполняем его значениями
+    mpz_class h = up_sqrt(m);
+    map_fx(sieve, m, h);
 
-    //4) Инициализируем пустой вектор T длины |X|
-    std::vector<mpz_class> T;
-    T.assign(X.size(), 0);  //Перестраховка, альтернатива T(X.size())
+    //4) Просеиваем
+    do_sieve(factor_base, sieve, m, h);
 
-    //5) Заполняем вектор Т
-    filling_t(T, X, B, m);
+    //5) Из просеянного решета используем те значения, которые равны 1
+    std::vector<mpz_class> left_factors;
+    for (std::size_t i = 0; i < sieve.size(); i++) {
+        if ( sieve[i] == 1) {
+            left_factors.push_back(f(i, h, m));
+        }
+    }
 
-    //6) Ищем Т* и раскладываем каждый элемент Т* на множители, сверяя с факторной базой
-    return check_t(T, B);
-
+    std::vector<mpz_class> left_exponents_matrix;
+    for (const auto& x : left_factors) {
+        auto line = get_exponents(x, factor_base);
+        for (auto & y : line) {
+        }
+        left_exponents_matrix.insert(left_exponents_matrix.end(), line.begin(), line.end());
+    }
+    return 0;
 }

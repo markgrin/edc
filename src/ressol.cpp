@@ -2,6 +2,8 @@
 
 #include "common.hpp"
 
+#include <iostream>
+
 namespace {
     std::pair<mpz_class, mpz_class> get_q_n_from_prime_minus_1(mpz_class prime) {
         prime = prime - 1;
@@ -26,17 +28,10 @@ namespace {
 }
 
 mpz_class ressol (mpz_class p, mpz_class a) {
+    a = a % p;
     auto [q, n] = get_q_n_from_prime_minus_1(p);
-    if (p % 4 == 3) {
+    if (n == 1) {
         return powm(a, (p + 1) / 4, p);
-    }
-    if (p % 8 == 5) {
-        mpz_class compare = powm(a, (p - 1) / 4, p);
-        if (compare == 1) {
-            return powm(a, (p + 3) / 8, p);
-        } else if (compare == p - 1) {
-            return 2 * a * powm(4 * a, (p - 5) / 8, p);
-        }
     }
     mpz_class z = 2;
     while (legendre(z, p) != -1) {
