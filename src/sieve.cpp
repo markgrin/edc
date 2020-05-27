@@ -56,12 +56,14 @@ std::vector<mpz_class> init_factor_base (const mpz_class& B, const mpz_class& m)
     if (m % 2 == 1) {
         factor_base.push_back(2);
     }
+    std::cout << "FACTOR_BASE:" << "\n";
     for (mpz_class i = 3; i <= B; i = nextprime(i)) {
         if (legendre(m, i) == 1) {
-            std::cout << "FACTOR_BASE:" << i << "\n";
+            std::cout << i << ", ";
             factor_base.push_back(i);
         }
     }
+    std::cout << "\n";
     return factor_base;
 }
 
@@ -80,7 +82,7 @@ void do_sieve(const std::vector<mpz_class>& factor_base, std::vector<mpz_class>&
         mpz_class x2 = p - x1;
         x1 = (x1 - (h % p) + p) % p;
         x2 = (x2 - (h % p) + p) % p;
-        std::cout << "RSESSOL:(" << p << "," << m << ") = " << x1 << " " << x2 << std::endl;
+        //std::cout << "RSESSOL:(" << p << "," << m << ") = " << x1 << " " << x2 << std::endl;
         apply_solution(sieve, x1, p);
         if (x1 != x2) {
             apply_solution(sieve, x2, p);
@@ -90,22 +92,33 @@ void do_sieve(const std::vector<mpz_class>& factor_base, std::vector<mpz_class>&
 
 std::vector<mpz_class> get_exponents(mpz_class number, const std::vector<mpz_class>& factors) {
     std::vector<mpz_class> result;
+    std::cout << number << " = ";
     for (const auto& factor : factors) {
         std::size_t i = 0;
         while (number % factor == 0) {
             number /= factor;
             i += 1;
         }
+        if (i != 0) {
+            std::cout << factor << "^" << i << " * ";
+        }
         result.push_back(i % 2);
     }
+    std::cout << "\n";
     return result;
 }
 
 }
 
 mpz_class quadratic_sieve_algorithm (const mpz_class& m) {
-    const mpz_class B = 29; // Максимальное число в факторной базе
-    const std::size_t S = 100; // Размер решета
+    mpz_class B = 1200; // Максимальное число в факторной базе
+    mpz_class sm = sqrt(m) * 100;
+    if (m == 15347) {
+        B = 85;
+        sm = 200;
+    }
+    const std::size_t S = sm.get_ui(); // Размер решета
+
 
     if (m % 2 == 0) {
         return 2;
@@ -119,6 +132,7 @@ mpz_class quadratic_sieve_algorithm (const mpz_class& m) {
     //3) Заполняем его значениями
     mpz_class h = up_sqrt(m);
     map_fx(sieve, m, h);
+    std::cout << "H = " << h << "\n";
 
     //4) Просеиваем
     do_sieve(factor_base, sieve, m, h);
@@ -126,9 +140,12 @@ mpz_class quadratic_sieve_algorithm (const mpz_class& m) {
     //5) Из просеянного решета используем те значения, которые равны 1
     mpz_class left = 1;
     std::vector<mpz_class> left_factors;
+    std::vector<mpz_class> left_xs;
+    std::cout << "Factors:\n";
     for (std::size_t i = 0; i < sieve.size(); i++) {
-        if ( sieve[i] == 1) {
-            std::cout << "i:" << i <<"\n";
+        if ( sieve[i] <= 1) {
+            std::cout << "[" << i <<"] => " << f(i, h, m) << "\n";
+            left_xs.push_back(i);
             left *= (i + h);
             left_factors.push_back(f(i, h, m));
         }
@@ -142,12 +159,28 @@ mpz_class quadratic_sieve_algorithm (const mpz_class& m) {
         left_exponents_matrix.insert(left_exponents_matrix.end(), line.begin(), line.end());
     }
     std::cout << "LEFT:" << left << "\n";
+    //return slow_solver(left_factors, left_xs, h, m);
     //gauss(left_exponents_matrix, left_factors.size(), factor_base.size());
-    auto right = gauss(left_exponents_matrix, factor_base.size(), left_factors.size(), left_factors);
-    right = sqrt(right);
+    auto [gauss_res, use] = gauss(left_exponents_matrix, left_factors.size(), factor_base.size(), left_factors);
+    left = 1;
+    for (std::size_t i = 0; i < left_factors.size(); i++) {
+        if (use[i]) {
+            left *= (left_xs[i] + h);
+        }
+    }
+    std::cout << "left:" << left << "\n";
+    mpz_class right = sqrt(gauss_res);
+    if ( (left * left % m) != (gauss_res % m)) {
+        std::cout << "UNEQUAL SQUARES\n";
+    }
+    if (right * right != gauss_res) {
+        std::cout << "BAD SQRT\n";
+    }
     std::cout << "RIGHT:" << right << "\n";
     auto res1 = gcd(right + left, m);
     auto res2 = gcd(abs(left - right), m);
+    std::cout << "RES:" << res1 << "\n";
+    std::cout << "RES:" << res2 << "\n";
     if (res1 > res2 && res1 != m) {
         return res1;
     }
