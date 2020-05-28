@@ -5,6 +5,62 @@
 
 namespace {
 
+
+mpz_class slow_solver(std::vector<mpz_class>& factors, std::vector<mpz_class>& lefts, mpz_class h, mpz_class m) {
+    std::vector<int> adds(factors.size(), 0);
+    mpz_class result = 1;
+    while(true) {
+        bool stop = true;
+        for (auto a : adds) {
+            if (!a) {
+                stop = false;
+                break ;
+            }
+        }
+        mpz_class right = 1;
+        mpz_class left = 1;
+        for (std::size_t j = 0; j < factors.size(); j++) {
+            if (adds[j]) {
+                right = right * factors[j];
+                left = left * (lefts[j] + h);
+            }
+        }
+        if (sqrt(right) * sqrt(right) == right && right != 1) {
+            ////std::cout << "FOUND RIGHT:" << right << " SQRT:" << sqrt(right) << "\n";
+            ////std::cout << "LEFT:" << left << "\n";
+            right = sqrt(right);
+            mpz_class result = gcd(left - right, m);
+            ////std::cout << "GCD:" << result << "\n";
+            if (result != 1 && result != m) {
+                return result;
+            }
+            result = gcd(left + right, m);
+            ////std::cout << "GCD:" << result << "\n";
+            if (result != 1 && result != m) {
+                return result;
+            }
+            ////std::cout << "BOTH BAD, CONTINUE:\n";
+            //for (std::size_t x = 0; x < adds.size(); x++) {
+            //////    std::cout << adds[x] << " ";
+            //}
+        }
+        bool carry = true;
+        if (stop) {
+            break ;
+        }
+        for (std::size_t i = 0; i < adds.size(); i++) {
+            int& a = adds[i];
+            if (!a) {
+                a = true;
+                break;
+            }
+            a = false;
+            carry = true;
+        }
+    }
+    return 1;
+}
+
 mpz_class& get_num(std::vector<mpz_class>& matrix, std::size_t width, std::size_t height, std::size_t x, std::size_t y) {
     return matrix[x * height + y];
     //return matrix[y * width + x];
@@ -17,7 +73,7 @@ void sub_lines(std::vector<mpz_class>& matrix, std::size_t width, std::size_t he
     }
 }
 
-void swap_lines(std::vector<mpz_class>& matrix, std::size_t width, std::size_t height, std::size_t i, std::size_t j, std::vector<mpz_class>& factors) {
+void swap_lines(std::vector<mpz_class>& matrix, std::size_t width, std::size_t height, std::size_t i, std::size_t j){//, std::vector<mpz_class>& factors) {
     for (std::size_t x = 0; x < width; x++) {
         std::swap(get_num(matrix, width, height, x, i), get_num(matrix, width, height, x, j));
     }
@@ -43,160 +99,54 @@ bool is_ones (std::vector<mpz_class>& matrix, std::size_t width, std::size_t hei
 }
 
 void print(std::vector<mpz_class>& matrix, std::size_t width, std::size_t height) {
-//    std::cout << "[\n";
+////    std::cout << "[\n";
     for (std::size_t y = 0; y < height; y++) {
         if (y <= 9) {
             std::cout << " ";
         }
         std::cout << y << "]  ";
-//        std::cout << "[\n";
+////        std::cout << "[\n";
         for (std::size_t x = 0; x < width; x++) {
             if (x) {
                 std::cout << ",";
             }
             std::cout << get_num(matrix, width, height, x, y) << " ";
         }
-//        std::cout << "]";
+////        std::cout << "]";
         if (y != height - 1) {
-//            std::cout << ",";
+////            std::cout << ",";
         }
         std::cout << "\n";
     }
-//    std::cout << "]\n";
+////    std::cout << "]\n";
 }
 
-std::pair<mpz_class, std::vector<int>> exp_solve(std::vector<mpz_class>& factors) {
-    std::vector<int> adds(factors.size(), 0);
-    mpz_class result = 1;
-    while(true) {
-        bool stop = true;
-        for (auto a : adds) {
-            if (!a) {
-                stop = false;
-                break ;
-            }
-        }
-        mpz_class i = 1;
-        for (std::size_t j = 0; j < factors.size(); j++) {
-            if (adds[j]) {
-                i = i * factors[j];
-            }
-            if (sqrt(i) * sqrt(i) == i && i != 1) {
-                std::cout << "FOUND:" << i << "\n";
-                for (std::size_t x = 0; x < adds.size(); x++) {
-                    std::cout << adds[x] << " ";
-                }
-                std::cout << "\n";
-                std::cout << "RESULT:" << result << "\n";
-                return {i, adds};
-                break;
-            }
-        }
-        bool carry = true;
-        if (stop) {
-            break ;
-        }
-        for (std::size_t i = 0; i < adds.size(); i++) {
-            int& a = adds[i];
-            if (!a) {
-                a = true;
-                break;
-            }
-            a = false;
-            carry = true;
-        }
-    }
-    return {result, adds};
-}
-
-}
-
-mpz_class slow_solver(std::vector<mpz_class>& factors, std::vector<mpz_class>& lefts, mpz_class h, mpz_class m) {
-    std::vector<int> adds(factors.size(), 0);
-    mpz_class result = 1;
-    while(true) {
-        bool stop = true;
-        for (auto a : adds) {
-            if (!a) {
-                stop = false;
-                break ;
-            }
-        }
-        mpz_class right = 1;
-        mpz_class left = 1;
-        for (std::size_t j = 0; j < factors.size(); j++) {
-            if (adds[j]) {
-                right = right * factors[j];
-                left = left * (lefts[j] + h);
-            }
-        }
-        if (sqrt(right) * sqrt(right) == right && right != 1) {
-            std::cout << "FOUND RIGHT:" << right << " SQRT:" << sqrt(right) << "\n";
-            std::cout << "LEFT:" << left << "\n";
-            right = sqrt(right);
-            mpz_class result = gcd(left - right, m);
-            std::cout << "GCD:" << result << "\n";
-            if (result != 1 && result != m) {
-                return result;
-            }
-            result = gcd(left + right, m);
-            std::cout << "GCD:" << result << "\n";
-            if (result != 1 && result != m) {
-                return result;
-            }
-            std::cout << "BOTH BAD, CONTINUE:\n";
-            //for (std::size_t x = 0; x < adds.size(); x++) {
-            //    std::cout << adds[x] << " ";
-            //}
-        }
-        bool carry = true;
-        if (stop) {
-            break ;
-        }
-        for (std::size_t i = 0; i < adds.size(); i++) {
-            int& a = adds[i];
-            if (!a) {
-                a = true;
-                break;
-            }
-            a = false;
-            carry = true;
-        }
-    }
-    return 1;
-}
-
-std::pair<mpz_class, std::vector<int>> gauss(std::vector<mpz_class>& matrix, std::size_t width, std::size_t height, std::vector<mpz_class>& factors) {
-    std::cout << "GAUSS FACTORS:" << "\n";
-    for (auto factor : factors) {
-        std:: cout << factor << ", ";
-    }
-    std::cout << "\nBEFORE:" << "\n";
-    print(matrix, width, height);
-    //return exp_solve(factors);
+void solve_gauss(std::vector<mpz_class>& matrix, std::size_t width, std::size_t height) {
+    //std::cout << "\nBEFORE:" << "\n";
+    //print(matrix, width, height);
     std::size_t clear_y = 0;
     for (std::size_t x = 0, y = 0; x < width; x++) {
         std::size_t keep_y = find_1_index(matrix, width, height, x, clear_y);
 
-        std::cout << x << " " << clear_y << "\n";
+        //std::cout << x << " " << clear_y << "\n";
         if (keep_y > height) {
             continue;
         }
-        swap_lines(matrix, width, height, clear_y, keep_y, factors);
-        std::cout << "SWAP:" << clear_y << " " << keep_y << "\n";
+        swap_lines(matrix, width, height, clear_y, keep_y);// {});//factors);
+        //std::cout << "SWAP:" << clear_y << " " << keep_y << "\n";
         clear_y++;
         for (std::size_t y = clear_y; y < height; y++) {
             if (!get_num(matrix, width, height, x, y)) { // clear_y == x
                 continue;
             }
-            std::cout << "SUB:" << clear_y - 1 << " " << y << "\n";
+            //std::cout << "SUB:" << clear_y - 1 << " " << y << "\n";
             sub_lines(matrix, width, height, y, clear_y - 1);
         }
-    std::cout << "\nBACK STEP:" << "\n";
-    print(matrix, width, height);
+    //std::cout << "\nSTEP:" << "\n";
+    //print(matrix, width, height);
     }
-    std::cout << "\nBACK STEP:" << "\n";
-    for (std::size_t y = height - 1; y > 1; y--) {
+    //std::cout << "\nBACK STEP:" << "\n";
+    for (std::size_t y = height - 1; y >= 1; y--) {
         std::size_t x_one = width + 1;
         for (std::size_t x = 0; x < width; x++) {
             if (get_num(matrix, width, height, x, y)) {
@@ -216,9 +166,14 @@ std::pair<mpz_class, std::vector<int>> gauss(std::vector<mpz_class>& matrix, std
             }
         }
     }
-    print(matrix, width, height);
-    std::vector<int> span(factors.size(), 0);
-    std::vector<std::vector<int>> summs(factors.size());
+    if (width < 40 && height < 40) {
+        print(matrix, width, height);
+    }
+}
+
+std::pair<std::vector<int>, std::vector<std::vector<int>>> get_span_and_summs(std::vector<mpz_class>& matrix, std::size_t width, std::size_t height) {
+    std::vector<int> span(width, 0);
+    std::vector<std::vector<int>> summs(width);
     for (std::size_t y = 0; y < height; y++) {
         std::vector<std::size_t> found;
         for (std::size_t x = 0; x < width; x++) {
@@ -244,58 +199,115 @@ std::pair<mpz_class, std::vector<int>> gauss(std::vector<mpz_class>& matrix, std
             }
         }
     }
-    std::cout << "GAUS ";
-    for (std::size_t x = 0; x < span.size(); x++) {
-        std::cout << span[x] << ", ";
-    }
-    std::cout << "\n";
-    for (std::size_t i = 0; i < summs.size(); i++) {
-        std::cout << i << " : ";
-        for (std::size_t j = 0; j < summs[i].size(); j++) {
-            std::cout << summs[i][j] << " ";
-        }
-        std::cout << "\n";
-    }
-    std::cout << std::endl << "\n";
-    std::vector<int> result(span.size(), 0);
+    return {span, summs};
+}
+
+std::vector<std::size_t> get_span_offsets(std::vector<int>& span) {
+    std::vector<std::size_t> offsets;
     for (std::size_t i = 0; i < span.size(); i++) {
         if (span[i] == 1) {
-            result[i] = 1;
-        } else if (span[i] == 3) {
-            result[i] = 0;
+            offsets.push_back(i);
         }
     }
-    std::cout << "SPANS" << std::endl;
-    for (std::size_t i = 0; i < span.size(); i++) {
-        if (span[i] == 1) {
-            result[i] = 1;
-        } else if (span[i] == 3) {
-            result[i] = 0;
-        }
-    }
-    std::cout << "ENDING" << std::endl;
-    for (std::size_t i = 0; i < span.size(); i++) {
+    return offsets;
+}
+
+void fill_by_span(std::vector<int>& result, std::vector<std::vector<int>>& summs, std::vector<int>& span) {
+    for (std::size_t i = 0; i < result.size(); i++) {
         if (span[i] != 0) {
             continue ;
         }
         const auto& sum = summs[i];
-        std::cout << "SUMMSSIZE:" << sum.size() << "\n";
+        //std::cout << "SUMMSSIZE:" << sum.size() << "\n";
         int summing = 0;
         for (const auto& x : sum) {
-        std::cout << "SUMMADD:" << x << "=" <<  result[x] << "\n";
+        //std::cout << "SUMMADD:" << x << "=" <<  result[x] << "\n";
             summing = (summing + result[x]) % 2;
         }
         result[i] = summing;
     }
-    std::cout << "RESULT:\n" << std::endl;
-    mpz_class right = 1;
-    for (std::size_t i = 0; i < result.size(); i++) {
-        std::cout << result[i] << " ,";
-        if (result[i]) {
-            right *= factors[i];
+}
+
+} // namespace
+
+mpz_class gauss(std::vector<mpz_class>& matrix, std::size_t width, std::size_t height, std::vector<mpz_class>& factors,
+    std::vector<mpz_class>& lefts, mpz_class h, mpz_class m) {
+    std::cout << "MATRIX: " << width << "x" << height << "\n";
+    //std::cout << "GAUSS FACTORS:" << "\n";
+    for (auto factor : factors) {
+        //std:: cout << factor << ", ";
+    }
+    solve_gauss(matrix, width, height);
+    auto [span, sums] = get_span_and_summs(matrix, width, height);
+    auto offsets = get_span_offsets(span);
+    std::vector<int> adds(offsets.size(), 0);
+    while(true) {
+        bool stop = true;
+        for (auto a : adds) {
+            if (!a) {
+                stop = false;
+                break ;
+            }
+        }
+        std::vector<int> result(span.size(), 0);
+        for (std::size_t i = 0; i < adds.size(); i++) {
+            result[offsets[i]] = adds[i];
+        }
+        fill_by_span(result, sums, span);
+        mpz_class left = 1;
+        mpz_class right = 1;
+        for (std::size_t j = 0; j < result.size(); j++) {
+            if (result[j]) {
+                right = right * factors[j];
+                left = left * (lefts[j] + h);
+            }
+        }
+        if (sqrt(right) * sqrt(right) == right && right != 1) {
+            std::cout << "FOUND RIGHT:" << right << " SQRT:" << sqrt(right) << "\n";
+            std::cout << "LEFT:" << left << "\n";
+            right = sqrt(right);
+            mpz_class result = gcd(left - right, m);
+            std::cout << "GCD:" << result << "\n";
+            if (result != 1 && result != m) {
+                return result;
+            }
+            result = gcd(left + right, m);
+            std::cout << "GCD:" << result << "\n";
+            if (result != 1 && result != m) {
+                return result;
+            }
+            std::cout << "BOTH BAD, CONTINUE:\n";
+            //for (std::size_t x = 0; x < adds.size(); x++) {
+            //////    std::cout << adds[x] << " ";
+            //}
+        }
+        bool carry = true;
+        if (stop) {
+            break ;
+        }
+        for (std::size_t i = 0; i < adds.size(); i++) {
+            int& a = adds[i];
+            if (!a) {
+                a = 1;
+                break;
+            }
+            a = 0;
+            carry = true;
         }
     }
-    std::cout << "\nAFTER:" << "\n";
-    print(matrix, width, height);
-    return {right, result};
+  
+    //////std::cout << std::endl << "\n";
+    //std::vector<int> result(span.size(), 0);
+ 
+    //////std::cout << "RESULT:\n" << std::endl;
+    //mpz_class right = 1;
+    //for (std::size_t i = 0; i < result.size(); i++) {
+    //////    std::cout << result[i] << " ,";
+    //    if (result[i]) {
+    //        right *= factors[i];
+    //    }
+    //}
+    //////std::cout << "\nAFTER:" << "\n";
+    //print(matrix, width, height);
+    return m;
 }

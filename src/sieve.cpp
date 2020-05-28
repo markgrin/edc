@@ -111,8 +111,8 @@ std::vector<mpz_class> get_exponents(mpz_class number, const std::vector<mpz_cla
 }
 
 mpz_class quadratic_sieve_algorithm (const mpz_class& m) {
-    mpz_class B = 1200; // Максимальное число в факторной базе
-    mpz_class sm = sqrt(m) * 100;
+    mpz_class B = 500; // Максимальное число в факторной базе
+    mpz_class sm = sqrt(m) * 2;
     if (m == 15347) {
         B = 85;
         sm = 200;
@@ -146,7 +146,7 @@ mpz_class quadratic_sieve_algorithm (const mpz_class& m) {
         if ( sieve[i] <= 1) {
             std::cout << "[" << i <<"] => " << f(i, h, m) << "\n";
             left_xs.push_back(i);
-            left *= (i + h);
+            //left *= (i + h);
             left_factors.push_back(f(i, h, m));
         }
     }
@@ -161,28 +161,29 @@ mpz_class quadratic_sieve_algorithm (const mpz_class& m) {
     std::cout << "LEFT:" << left << "\n";
     //return slow_solver(left_factors, left_xs, h, m);
     //gauss(left_exponents_matrix, left_factors.size(), factor_base.size());
-    auto [gauss_res, use] = gauss(left_exponents_matrix, left_factors.size(), factor_base.size(), left_factors);
-    left = 1;
-    for (std::size_t i = 0; i < left_factors.size(); i++) {
-        if (use[i]) {
-            left *= (left_xs[i] + h);
-        }
-    }
-    std::cout << "left:" << left << "\n";
-    mpz_class right = sqrt(gauss_res);
-    if ( (left * left % m) != (gauss_res % m)) {
-        std::cout << "UNEQUAL SQUARES\n";
-    }
-    if (right * right != gauss_res) {
-        std::cout << "BAD SQRT\n";
-    }
-    std::cout << "RIGHT:" << right << "\n";
-    auto res1 = gcd(right + left, m);
-    auto res2 = gcd(abs(left - right), m);
-    std::cout << "RES:" << res1 << "\n";
-    std::cout << "RES:" << res2 << "\n";
-    if (res1 > res2 && res1 != m) {
-        return res1;
-    }
-    return res2;
+    return gauss(left_exponents_matrix, left_factors.size(), factor_base.size(), left_factors, left_xs, h, m);
+    //auto [gauss_res, use] = gauss(left_exponents_matrix, left_factors.size(), factor_base.size(), left_factors, left_xs, h, m);
+    //left = 1;
+    //for (std::size_t i = 0; i < left_factors.size(); i++) {
+    //    if (use[i]) {
+    //        left *= (left_xs[i] + h);
+    //    }
+    //}
+    //std::cout << "left:" << left << "\n";
+    //mpz_class right = sqrt(gauss_res);
+    //if ( (left * left % m) != (gauss_res % m)) {
+    //    std::cout << "UNEQUAL SQUARES\n";
+    //}
+    //if (right * right != gauss_res) {
+    //    std::cout << "BAD SQRT\n";
+    //}
+    //std::cout << "RIGHT:" << right << "\n";
+    //auto res1 = gcd(right + left, m);
+    //auto res2 = gcd(abs(left - right), m);
+    //std::cout << "RES:" << res1 << "\n";
+    //std::cout << "RES:" << res2 << "\n";
+    //if (res1 > res2 && res1 != m) {
+    //    return res1;
+    //}
+    //return res2;
 }
