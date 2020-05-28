@@ -1,6 +1,7 @@
 #include "common.hpp"
 
 namespace {
+
     struct random_state__ {
         gmp_randstate_t state;
         random_state__() {
@@ -41,4 +42,8 @@ mpz_class nextprime (mpz_class& a) {
 
 void abs (mpz_class& a) {
     mpz_abs(a.get_mpz_t(), a.get_mpz_t());
+}
+
+bool is_prime(const mpz_class& a) {
+    return mpz_probab_prime_p((a.get_mpz_t()), 50) > 0;
 }

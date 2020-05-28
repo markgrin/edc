@@ -5,6 +5,12 @@
 #include <iostream>
 
 namespace {
+    /**
+     * @brief Вспомогательная функция - для выделения степени 2 из числа.
+     * 
+     * @param prime - простое число
+     * @return std::pair<mpz_class, mpz_class> q, n
+     */
     std::pair<mpz_class, mpz_class> get_q_n_from_prime_minus_1(mpz_class prime) {
         prime = prime - 1;
         mpz_class n = 0;
@@ -14,6 +20,14 @@ namespace {
         }
         return {prime, n};
     }
+
+    /**
+     * @brief Вспомогательная функция для возведения в степень
+     * 
+     * @param base база
+     * @param exp показатель
+     * @return mpz_class результат
+     */
     mpz_class pow_ui(mpz_class base, mpz_class exp) {
         if (exp < 1) {
             return 1;

@@ -45,5 +45,10 @@ mpz_class nextprime (mpz_class& a);
  */
 void abs (mpz_class& a);
 
+/**
+ * @brief Проверка на простоту - вероятностным путем
+ */
+bool is_prime(const mpz_class& a);
+
 
 #endif // HPP_AB06F552D8C44A64962836BB3165C20E

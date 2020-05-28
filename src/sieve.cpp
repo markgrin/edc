@@ -13,7 +13,7 @@ namespace {
  * @brief Функция f(x) = (x + h)^2 - m
  * 
  * @param x - аргумент функции
- * @param h - константа - рекомендуется sqrt(m) с округлением в меньшую сторону
+ * @param h - константа - рекомендуется sqrt(m) с округлением в большую сторону
  * @param m - факторизуемое число
  */
 mpz_class f(const mpz_class& x, const mpz_class& h, const mpz_class& m) {
@@ -22,6 +22,9 @@ mpz_class f(const mpz_class& x, const mpz_class& h, const mpz_class& m) {
     return result * result - m;
 }
 
+/**
+ * @brief Корень с округлением вверх
+ */
 mpz_class up_sqrt(const mpz_class& x) {
     mpz_class result = sqrt(x);
     if (result * result == x) {
@@ -67,12 +70,27 @@ std::vector<mpz_class> init_factor_base (const mpz_class& B, const mpz_class& m)
     return factor_base;
 }
 
+/**
+ * @brief Применяет к решету найденное решение, просеивает
+ * 
+ * @param sieve Массив с решеткой
+ * @param x Начальная позиция
+ * @param p Простое число
+ */
 void apply_solution(std::vector<mpz_class>& sieve, mpz_class x, mpz_class p) {
     for (mpz_class kp = x; kp < sieve.size(); kp = kp + p) {
         sieve[kp.get_ui()] /= p;
     }
 }
 
+/**
+ * @brief Просеивает решето через факторную базу
+ * 
+ * @param factor_base факторная база
+ * @param sieve решето
+ * @param m факторизуемое число
+ * @param h параметр
+ */
 void do_sieve(const std::vector<mpz_class>& factor_base, std::vector<mpz_class>& sieve, mpz_class m, mpz_class h) {
     for (std::size_t i = 0; i < factor_base.size(); i++) {
         auto p = factor_base[i];
@@ -82,7 +100,6 @@ void do_sieve(const std::vector<mpz_class>& factor_base, std::vector<mpz_class>&
         mpz_class x2 = p - x1;
         x1 = (x1 - (h % p) + p) % p;
         x2 = (x2 - (h % p) + p) % p;
-        //std::cout << "RSESSOL:(" << p << "," << m << ") = " << x1 << " " << x2 << std::endl;
         apply_solution(sieve, x1, p);
         if (x1 != x2) {
             apply_solution(sieve, x2, p);
@@ -90,6 +107,13 @@ void do_sieve(const std::vector<mpz_class>& factor_base, std::vector<mpz_class>&
     }
 }
 
+/**
+ * @brief Раскладывает число на указанные множители
+ * 
+ * @param number Число
+ * @param factors Множетиле
+ * @return std::vector<mpz_class> Показатели множетелей
+ */
 std::vector<mpz_class> get_exponents(mpz_class number, const std::vector<mpz_class>& factors) {
     std::vector<mpz_class> result;
     std::cout << number << " = ";
@@ -113,16 +137,16 @@ std::vector<mpz_class> get_exponents(mpz_class number, const std::vector<mpz_cla
 mpz_class quadratic_sieve_algorithm (const mpz_class& m) {
     mpz_class B = 500; // Максимальное число в факторной базе
     mpz_class sm = sqrt(m) * 2;
-    if (m == 15347) {
-        B = 85;
-        sm = 200;
-    }
     const std::size_t S = sm.get_ui(); // Размер решета
 
 
-    if (m % 2 == 0) {
+    if (is_prime(m)) { // Не раскладываем простые числа
+        return m;
+    }
+    if (m % 2 == 0) { // Не раскалдываем четные
         return 2;
     }
+
     //1) Инициализируем Факторную базу
     auto factor_base = init_factor_base(B, m);
 
@@ -138,52 +162,26 @@ mpz_class quadratic_sieve_algorithm (const mpz_class& m) {
     do_sieve(factor_base, sieve, m, h);
 
     //5) Из просеянного решета используем те значения, которые равны 1
-    mpz_class left = 1;
     std::vector<mpz_class> left_factors;
     std::vector<mpz_class> left_xs;
     std::cout << "Factors:\n";
     for (std::size_t i = 0; i < sieve.size(); i++) {
         if ( sieve[i] <= 1) {
             std::cout << "[" << i <<"] => " << f(i, h, m) << "\n";
-            left_xs.push_back(i);
-            //left *= (i + h);
-            left_factors.push_back(f(i, h, m));
+            left_xs.push_back(i); // Запоминаем индексы - они понадабятся
+            left_factors.push_back(f(i, h, m)); // Запоминаем y(x)
         }
     }
 
+    //6) Получаем матрицу
     std::vector<mpz_class> left_exponents_matrix;
     for (const auto& x : left_factors) {
-        auto line = get_exponents(x, factor_base);
+        auto line = get_exponents(x, factor_base); // Раскладываем на множители
         for (auto & y : line) {
         }
         left_exponents_matrix.insert(left_exponents_matrix.end(), line.begin(), line.end());
     }
-    std::cout << "LEFT:" << left << "\n";
-    //return slow_solver(left_factors, left_xs, h, m);
-    //gauss(left_exponents_matrix, left_factors.size(), factor_base.size());
+    //7) Просеивание готово, есть множители, индексы и матрица с разложением этих множителей
+    // Все это передаем на следующий этап - метод Гаусса-Жордана
     return gauss(left_exponents_matrix, left_factors.size(), factor_base.size(), left_factors, left_xs, h, m);
-    //auto [gauss_res, use] = gauss(left_exponents_matrix, left_factors.size(), factor_base.size(), left_factors, left_xs, h, m);
-    //left = 1;
-    //for (std::size_t i = 0; i < left_factors.size(); i++) {
-    //    if (use[i]) {
-    //        left *= (left_xs[i] + h);
-    //    }
-    //}
-    //std::cout << "left:" << left << "\n";
-    //mpz_class right = sqrt(gauss_res);
-    //if ( (left * left % m) != (gauss_res % m)) {
-    //    std::cout << "UNEQUAL SQUARES\n";
-    //}
-    //if (right * right != gauss_res) {
-    //    std::cout << "BAD SQRT\n";
-    //}
-    //std::cout << "RIGHT:" << right << "\n";
-    //auto res1 = gcd(right + left, m);
-    //auto res2 = gcd(abs(left - right), m);
-    //std::cout << "RES:" << res1 << "\n";
-    //std::cout << "RES:" << res2 << "\n";
-    //if (res1 > res2 && res1 != m) {
-    //    return res1;
-    //}
-    //return res2;
 }
